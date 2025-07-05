@@ -37,6 +37,9 @@
             (old.packages or [])
             ++ (with pkgs; [
               cargo-expand
+              cargo-edit
+              cargo-machete
+              cargo-features-manager
             ]);
         });
       };
