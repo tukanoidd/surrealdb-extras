@@ -1,11 +1,13 @@
-use crate::{Record, RecordData, SurrealSelectInfo};
-use serde::Serialize;
-use serde::de::DeserializeOwned;
-use surrealdb::method::{Content, Delete, Merge, Patch, Select};
-use surrealdb::opt::{IntoResource, PatchOp, Resource};
-use surrealdb::{Connection, Error, RecordId, Surreal, Value};
-
 mod from;
+
+use serde::{Serialize, de::DeserializeOwned};
+use surrealdb::{
+    Connection, Error, RecordId, Surreal, Value,
+    method::{Content, Delete, Merge, Patch, Select},
+    opt::{IntoResource, PatchOp, Resource},
+};
+
+use crate::{Record, RecordData, SurrealSelectInfo};
 
 pub struct ThingArray(pub Vec<RecordId>);
 

@@ -1,10 +1,12 @@
 #![allow(async_fn_in_trait)]
-use crate::{Record, RecordData, SurrealSelectInfo};
+
+use std::collections::HashMap;
+
 use serde::Serialize;
 use serde_content::Serializer;
-use std::collections::HashMap;
-use surrealdb::sql::Value;
-use surrealdb::{Connection, RecordIdKey, Surreal};
+use surrealdb::{Connection, RecordIdKey, Surreal, sql::SqlValue};
+
+use crate::{Record, RecordData, SurrealSelectInfo};
 
 type F1 = fn() -> &'static str;
 type F3 = fn(&HashMap<&'static str, &'static str>) -> Vec<String>;
@@ -29,14 +31,16 @@ pub trait SurrealTableInfo: Serialize + SurrealSelectInfo + Clone + 'static {
         db: &'a Surreal<C>,
     ) -> Result<Option<Record>, surrealdb::Error> {
         let ignore = Self::exclude();
-        let value: Value = Serializer::new()
+        let value: SqlValue = Serializer::new()
             .serialize(self)
             .map_err(|e| {
-                surrealdb::Error::Api(surrealdb::error::Api::SerializeValue(e.to_string()))
+                surrealdb::Error::new(surrealdb::error::Api::SerializeValue(e.to_string()))
             })?
             .try_into()?;
+
         let mut query = vec![];
-        if let Value::Object(obj) = value {
+
+        if let SqlValue::Object(obj) = value {
             for (key, item) in obj.0 {
                 if !ignore.contains(&key.as_str()) {
                     query.push(format!("{key} = {item}"));
@@ -62,7 +66,7 @@ pub trait SurrealTableInfo: Serialize + SurrealSelectInfo + Clone + 'static {
     async fn add_i<D: Connection>(self, conn: &Surreal<D>) -> Result<Record, surrealdb::Error> {
         let r: Option<Record> = conn.create(Self::name()).content(self).await?;
 
-        r.ok_or(surrealdb::Error::Api(surrealdb::error::Api::InternalError(
+        r.ok_or(surrealdb::Error::new(surrealdb::error::Api::InternalError(
             "No return value".to_owned(),
         )))
     }
