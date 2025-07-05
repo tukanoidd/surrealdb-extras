@@ -73,7 +73,7 @@ pub fn to_kind(s: &str, names: &HashMap<&'static str, &'static str>) -> Kind {
     } else if let Some(v) = parse_inner::<RecordIdType<bool>>(s) {
         let db = names
             .get(v.as_str())
-            .unwrap_or_else(|| panic!("{} is not a table", v));
+            .unwrap_or_else(|| panic!("{v} is not a table"));
         Kind::Record(vec![surrealdb::sql::Table::from(db.to_string())])
     } else if let Some(v) = parse_inner::<Option<bool>>(s) {
         let ki = to_kind(v.as_str(), names);
@@ -87,7 +87,7 @@ pub fn to_kind(s: &str, names: &HashMap<&'static str, &'static str>) -> Kind {
     } else if let Some(v) = parse_inner::<HashSet<bool>>(s) {
         Kind::Set(Box::new(to_kind(v.as_str(), names)), None)
     } else {
-        println!("{}", s);
+        println!("{s}");
         Kind::Any
     }
 }

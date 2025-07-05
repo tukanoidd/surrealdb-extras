@@ -1,22 +1,23 @@
 #![doc=include_str!( "../readme.md")]
+
+pub mod thing;
+
 mod define;
 mod does_imp;
 mod r2k;
 mod records;
 mod surreal_table;
-pub mod thing;
-use serde::de::DeserializeOwned;
+
 use std::collections::HashMap;
 
+use serde::de::DeserializeOwned;
+
+pub use surrealdb_extras_proc_macro::{SurrealSelect, SurrealTable};
+
 pub use define::use_ns_db;
-pub use records::Record;
-pub use records::RecordData;
+pub use records::{Record, RecordData};
 pub use surreal_table::SurrealTableInfo;
-pub use surrealdb_extras_proc_macro::SurrealSelect;
-pub use surrealdb_extras_proc_macro::SurrealTable;
-pub use thing::RecordIdFunc;
-pub use thing::RecordIdType;
-pub use thing::ThingArray;
+pub use thing::{RecordIdFunc, RecordIdType, ThingArray};
 
 #[doc(hidden)]
 /// converts struct structure to the db type

@@ -22,13 +22,12 @@ pub async fn use_ns_db<C: Connection>(
 ) -> surrealdb::Result<Surreal<C>> {
     let conn = conn.await?;
     if missing(&conn, "INFO FOR KV", ("namespaces", namespace)).await {
-        conn.query(format!("DEFINE NAMESPACE {};", namespace))
-            .await?;
+        conn.query(format!("DEFINE NAMESPACE {namespace};")).await?;
     }
     conn.use_ns(namespace).await?;
 
     if missing(&conn, "INFO FOR NS", ("databases", db)).await {
-        conn.query(format!("DEFINE DATABASE {};", db)).await?;
+        conn.query(format!("DEFINE DATABASE {db};")).await?;
     }
     conn.use_db(db).await?;
     let mut hm = HashMap::new();
@@ -40,9 +39,9 @@ pub async fn use_ns_db<C: Connection>(
 
     let tables = table_list(&conn).await;
     for (name, _, funcs) in register {
-        if tables.get(name()).is_none() {
+        if !tables.contains(name()) {
             for query in funcs(&hm) {
-                println!("{}", query);
+                println!("{query}");
                 conn.query(query).await?;
             }
         }

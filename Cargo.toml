@@ -1,19 +1,20 @@
 [package]
 name = "surrealdb-extras"
-version = "2.0.10"
-edition = "2021"
 readme = "readme.md"
-repository = "https://github.com/frederik-uni/surrealdb-extras"
-license = "MIT"
-authors = ["frederik"]
-description = "Provides additional functionality for working with SurrealDB"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+authors.workspace = true
+description.workspace = true
 
 [dependencies]
-surrealdb = "2"
-#surrealdb-extras-proc-macro = {path = "surrealdb-extras-proc-macro"}
-surrealdb-extras-proc-macro = "2.0.10"
+surrealdb-extras-proc-macro = { path = "./surrealdb-extras-proc-macro" }
+
+# surrealdb = "2"
+surrealdb = { version = "3.0", package = "surrealdb-nightly" }
+
 serde = { version = "1.0", features = ["derive"] }
 chrono = { version = "0.4", optional = true }
 geo = { version = "0.29", optional = true }
@@ -27,3 +28,11 @@ uuid = ["dep:uuid"]
 chrono = ["dep:chrono"]
 geo = ["dep:geo"]
 rust_decimal = ["dep:rust_decimal"]
+
+[workspace.package]
+version = "2.0.11-alpha3"
+edition = "2024"
+repository = "https://github.com/tukanoidd/surrealdb-extras"
+license = "MIT"
+authors = ["frederik", "Vitalii Lukyanov <tukanoid@outlook.com>"]
+description = "Provides additional functionality for working with SurrealDB"

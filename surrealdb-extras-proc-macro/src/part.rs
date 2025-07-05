@@ -1,7 +1,7 @@
 use crate::SurrealTableOverwrite;
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields};
+use syn::{Data, DeriveInput, Fields, parse_macro_input};
 
 pub fn derive_attribute_collector(input: TokenStream) -> TokenStream {
     let mut input = parse_macro_input!(input as DeriveInput);
@@ -13,14 +13,11 @@ pub fn derive_attribute_collector(input: TokenStream) -> TokenStream {
                 Data::Struct(data_struct) => match &mut data_struct.fields {
                     Fields::Named(fields_named) => fields_named.named.iter_mut().map(|field| {
                         let renamed: Option<SurrealTableOverwrite> =
-                            match deluxe::parse_attributes(field) {
-                                Ok(obj) => Some(obj),
-                                Err(_) => None,
-                            };
-                        let field_name = renamed
+                            deluxe::parse_attributes(field).ok();
+
+                        renamed
                             .and_then(|v| v.rename.clone())
-                            .unwrap_or(field.ident.as_ref().unwrap().to_string());
-                        field_name
+                            .unwrap_or(field.ident.as_ref().unwrap().to_string())
                     }),
                     _ => unimplemented!("AttributeCollector only supports structs."),
                 },
@@ -30,8 +27,7 @@ pub fn derive_attribute_collector(input: TokenStream) -> TokenStream {
         .collect::<Vec<_>>(),
     );
     let struct_impl = &input.ident;
-    let gen = quote! {
-
+    let gen_ = quote! {
         impl surrealdb_extras::SurrealSelectInfo for #struct_impl {
             fn keys() -> &'static [&'static str]{
                 &[#( #attributes ),*]
@@ -39,5 +35,5 @@ pub fn derive_attribute_collector(input: TokenStream) -> TokenStream {
         }
     };
 
-    gen.into()
+    gen_.into()
 }

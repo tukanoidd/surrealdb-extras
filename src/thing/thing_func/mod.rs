@@ -1,6 +1,6 @@
 use crate::{Record, RecordData, SurrealSelectInfo};
-use serde::de::DeserializeOwned;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 use surrealdb::method::{Content, Delete, Merge, Patch, Select};
 use surrealdb::opt::PatchOp;
 use surrealdb::{Connection, Error, RecordId, RecordIdKey, Surreal};
@@ -28,39 +28,39 @@ impl RecordIdFunc {
     }
 
     /// deletes from db and return value
-    pub fn delete<T, C: Connection>(self, conn: &Surreal<C>) -> Delete<C, Option<T>> {
+    pub fn delete<T, C: Connection>(self, conn: &'_ Surreal<C>) -> Delete<'_, C, Option<T>> {
         conn.delete(self.0)
     }
 
     /// gets from db
-    pub fn get<T, C: Connection>(self, conn: &Surreal<C>) -> Select<C, Option<T>> {
+    pub fn get<T, C: Connection>(self, conn: &'_ Surreal<C>) -> Select<'_, C, Option<T>> {
         conn.select(self.0)
     }
 
     /// Replaces the current document / record data with the specified data
     pub fn replace<R: DeserializeOwned, C: Connection, D: Serialize + 'static>(
         self,
-        conn: &Surreal<C>,
+        conn: &'_ Surreal<C>,
         data: D,
-    ) -> Content<C, Option<R>> {
+    ) -> Content<'_, C, Option<R>> {
         conn.update(self.0).content(data)
     }
 
     /// Merges the current document / record data with the specified data
     pub fn merge<T: DeserializeOwned, C: Connection, D: Serialize>(
         self,
-        conn: &Surreal<C>,
+        conn: &'_ Surreal<C>,
         data: D,
-    ) -> Merge<C, D, Option<T>> {
+    ) -> Merge<'_, C, D, Option<T>> {
         conn.update(self.0).merge(data)
     }
 
     /// Patches the current document / record data with the specified JSON Patch data
     pub fn patch<T: DeserializeOwned, C: Connection>(
         self,
-        conn: &Surreal<C>,
+        conn: &'_ Surreal<C>,
         data: PatchOp,
-    ) -> Patch<C, Option<T>> {
+    ) -> Patch<'_, C, Option<T>> {
         conn.update(self.0).patch(data)
     }
 

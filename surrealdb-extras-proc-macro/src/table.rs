@@ -2,7 +2,7 @@ use crate::{SurrealDatabaseExtraCommands, SurrealDatabaseName, SurrealTableOverw
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields};
+use syn::{Data, DeriveInput, Fields, parse_macro_input};
 
 pub fn derive_attribute_collector(input: TokenStream) -> TokenStream {
     let mut input = parse_macro_input!(input as DeriveInput);
@@ -18,7 +18,8 @@ pub fn derive_attribute_collector(input: TokenStream) -> TokenStream {
         match &mut input.data {
             Data::Struct(data_struct) => match &mut data_struct.fields {
                 Fields::Named(fields_named) => {
-                    let create_table = format!("DEFINE TABLE {};", struct_name);
+                    let create_table = format!("DEFINE TABLE {struct_name};");
+
                     let mut items = vec![(quote!(#create_table.to_string()), None, None)];
                     items.append(
                         &mut fields_named
@@ -26,10 +27,7 @@ pub fn derive_attribute_collector(input: TokenStream) -> TokenStream {
                             .iter_mut()
                             .map(|field| {
                                 let renamed: Option<SurrealTableOverwrite> =
-                                    match deluxe::parse_attributes(field) {
-                                        Ok(obj) => Some(obj),
-                                        Err(_) => None,
-                                    };
+                                    deluxe::parse_attributes(field).ok();
 
                                 let (field_name, field_type, exclude) = renamed.map(|v| (v.rename.clone(), v.db_type.clone(), v.exclude)).unwrap_or((None, None, None));
                                 let field_name = field_name.unwrap_or(field.ident.as_ref().unwrap().to_string());
@@ -76,7 +74,7 @@ pub fn derive_attribute_collector(input: TokenStream) -> TokenStream {
         attr.push(quote!(#temp.to_string()));
     }
 
-    let gen = quote! {
+    let gen_ = quote! {
         impl surrealdb_extras::SurrealSelectInfo for #struct_impl {
             fn keys()-> &'static [&'static str] {
                 &[#( #keys ),*]
@@ -111,5 +109,6 @@ pub fn derive_attribute_collector(input: TokenStream) -> TokenStream {
             }
         }
     };
-    gen.into()
+
+    gen_.into()
 }

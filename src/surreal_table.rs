@@ -39,7 +39,7 @@ pub trait SurrealTableInfo: Serialize + SurrealSelectInfo + Clone + 'static {
         if let Value::Object(obj) = value {
             for (key, item) in obj.0 {
                 if !ignore.contains(&key.as_str()) {
-                    query.push(format!("{} = {}", key, item));
+                    query.push(format!("{key} = {item}"));
                 }
             }
         } else {
@@ -61,9 +61,10 @@ pub trait SurrealTableInfo: Serialize + SurrealSelectInfo + Clone + 'static {
     /// adds itself to the db and returns Record
     async fn add_i<D: Connection>(self, conn: &Surreal<D>) -> Result<Record, surrealdb::Error> {
         let r: Option<Record> = conn.create(Self::name()).content(self).await?;
-        return r.ok_or(surrealdb::Error::Api(surrealdb::error::Api::InternalError(
+
+        r.ok_or(surrealdb::Error::Api(surrealdb::error::Api::InternalError(
             "No return value".to_owned(),
-        )));
+        )))
     }
 
     /// checks if item exists(adds to db if its not in db) and returns id
@@ -90,7 +91,7 @@ pub trait SurrealTableInfo: Serialize + SurrealSelectInfo + Clone + 'static {
             keys.join(", "),
             Self::name(),
             match query {
-                Some(v) => format!(" {}", v),
+                Some(v) => format!(" {v}"),
                 None => "".to_string(),
             }
         );
@@ -115,8 +116,8 @@ pub trait SurrealTableInfo: Serialize + SurrealSelectInfo + Clone + 'static {
 
     /// returns every item in table
     fn all<T: serde::Serialize, C: Connection>(
-        conn: &Surreal<C>,
-    ) -> surrealdb::method::Select<C, Vec<T>> {
+        conn: &'_ Surreal<C>,
+    ) -> surrealdb::method::Select<'_, C, Vec<T>> {
         conn.select(Self::name())
     }
 

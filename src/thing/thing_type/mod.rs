@@ -74,30 +74,34 @@ impl<T: SurrealTableInfo + SurrealSelectInfo> RecordIdType<T> {
     }
 
     /// Patches the current document / record data with the specified JSON Patch data
-    pub fn patch<C: Connection>(self, conn: &Surreal<C>, data: PatchOp) -> Patch<C, Option<T>> {
+    pub fn patch<C: Connection>(
+        self,
+        conn: &'_ Surreal<C>,
+        data: PatchOp,
+    ) -> Patch<'_, C, Option<T>> {
         self.thing.patch(conn, data)
     }
 
     /// Merges the current document / record data with the specified data
     pub fn merge<C: Connection, D: Serialize>(
         self,
-        conn: &Surreal<C>,
+        conn: &'_ Surreal<C>,
         data: D,
-    ) -> Merge<C, D, Option<T>> {
+    ) -> Merge<'_, C, D, Option<T>> {
         self.thing.merge(conn, data)
     }
 
     /// Replaces the current document / record data with the specified data
     pub fn replace<C: Connection, D: Serialize + 'static>(
         self,
-        conn: &Surreal<C>,
+        conn: &'_ Surreal<C>,
         data: D,
-    ) -> Content<C, Option<T>> {
+    ) -> Content<'_, C, Option<T>> {
         self.thing.replace(conn, data)
     }
 
     /// deletes from db and return value
-    pub fn delete<C: Connection>(self, conn: &Surreal<C>) -> Delete<C, Option<T>> {
+    pub fn delete<C: Connection>(self, conn: &'_ Surreal<C>) -> Delete<'_, C, Option<T>> {
         self.thing.delete(conn)
     }
 }
