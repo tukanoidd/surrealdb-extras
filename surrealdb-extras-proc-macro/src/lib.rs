@@ -1,3 +1,4 @@
+mod query;
 mod table;
 mod util;
 
@@ -6,7 +7,7 @@ use quote::ToTokens;
 use surrealdb_core::dbs::{Capabilities, capabilities::Targets};
 use syn::LitStr;
 
-use crate::{table::SurrealTable, util::DeriveInputUtil};
+use crate::{query::SurrealQuery, table::SurrealTable, util::DeriveInputUtil};
 
 /// implements SurrealSelectInfo, SurrealTableInfo, add and insert
 #[manyhow::manyhow]
@@ -29,4 +30,13 @@ pub fn sql(input: TokenStream) -> manyhow::Result<TokenStream> {
         Ok(_) => Ok(sql_lit_str.to_token_stream()),
         Err(err) => manyhow::bail!(sql_lit_str.span(), "{err}"),
     }
+}
+
+#[manyhow::manyhow]
+#[proc_macro_derive(SurrealQuery, attributes(query, var))]
+pub fn query(input: TokenStream) -> manyhow::Result<TokenStream> {
+    let query = SurrealQuery::parse(input)?;
+    let res = query.gen_()?;
+
+    Ok(res)
 }

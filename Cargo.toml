@@ -27,7 +27,7 @@ description.workspace = true
 [dependencies]
 surrealdb-extras-proc-macro = { path = "./surrealdb-extras-proc-macro" }
 
-surrealdb = { workspace = true, package = "surrealdb-nightly" }
+surrealdb.workspace = true
 
 serde = { version = "1.0", features = ["derive"] }
 chrono = { version = "0.4", optional = true }
