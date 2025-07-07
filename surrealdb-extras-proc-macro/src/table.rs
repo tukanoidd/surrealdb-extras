@@ -151,6 +151,7 @@ struct SurrealTableField {
     ty: Type,
 
     rename: Option<Ident>,
+    // TODO: Support more complex types
     db_type: Option<Ident>,
     exclude: Flag,
 }

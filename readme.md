@@ -23,14 +23,14 @@ pub async fn establish<C, S>(
 struct Test {
     random_number: i32,
     /// renamed field
-    #[opt(rename = "new_name")]
+    #[opt(rename = new_name)]
     #[serde(rename = "new_name")]
     data: String,
     /// overwrites the detected db type
-    #[opt(db_type = "string")]
+    #[opt(db_type = string)]
     data: CustomStructWithSerialize,
     /// will be excluded in get_or_insert check
-    #[opt(exclude = true)]
+    #[opt(exclude)]
     updated: Datetime
 }
 
