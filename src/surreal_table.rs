@@ -2,7 +2,7 @@
 
 use serde::Serialize;
 use serde_content::Serializer;
-use surrealdb::{Connection, RecordIdKey, Surreal, sql::SqlValue};
+use surrealdb::{Connection, RecordIdKey, Surreal, sql::Value};
 
 use crate::{Record, RecordData, SurrealSelectInfo};
 
@@ -29,16 +29,16 @@ pub trait SurrealTableInfo: Serialize + SurrealSelectInfo + Clone + 'static {
         db: &'a Surreal<C>,
     ) -> Result<Option<Record>, surrealdb::Error> {
         let ignore = Self::exclude();
-        let value: SqlValue = Serializer::new()
+        let value: Value = Serializer::new()
             .serialize(self)
             .map_err(|e| {
-                surrealdb::Error::new(surrealdb::error::Api::SerializeValue(e.to_string()))
+                surrealdb::Error::Api(surrealdb::error::Api::SerializeValue(e.to_string()))
             })?
             .try_into()?;
 
         let mut query = vec![];
 
-        if let SqlValue::Object(obj) = value {
+        if let Value::Object(obj) = value {
             for (key, item) in obj.0 {
                 if !ignore.contains(&key.as_str()) {
                     query.push(format!("{key} = {item}"));
@@ -64,7 +64,7 @@ pub trait SurrealTableInfo: Serialize + SurrealSelectInfo + Clone + 'static {
     async fn add_i<D: Connection>(self, conn: &Surreal<D>) -> Result<Record, surrealdb::Error> {
         let r: Option<Record> = conn.create(Self::name()).content(self).await?;
 
-        r.ok_or(surrealdb::Error::new(surrealdb::error::Api::InternalError(
+        r.ok_or(surrealdb::Error::Api(surrealdb::error::Api::InternalError(
             "No return value".to_owned(),
         )))
     }
