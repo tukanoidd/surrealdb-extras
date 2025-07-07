@@ -2,7 +2,7 @@
 members = ["./surrealdb-extras-proc-macro"]
 
 [workspace.package]
-version = "2.0.11-alpha3"
+version = "3.0.0-alpha1"
 edition = "2024"
 repository = "https://github.com/tukanoidd/surrealdb-extras"
 license = "MIT"
