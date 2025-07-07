@@ -1,14 +1,15 @@
+use std::collections::HashSet;
+
+use surrealdb::{Connect, Connection, Surreal, Value};
+
 use crate::surreal_table::Register;
-use std::collections::{HashMap, HashSet};
-use surrealdb::Value;
-use surrealdb::{Connect, Connection, Surreal};
 
 /// creates namespace, db, tables and defines the attributes if they do not exist
 /// ```
 /// use std::path::PathBuf;
-/// use surrealdb::key::namespace::db::Db;
-/// use surrealdb::opt::Config;
-/// use surrealdb::Surreal;
+///
+/// use surrealdb::{key::namespace::db::Db, opt::Config, Surreal};
+///
 /// pub async fn establish(path: PathBuf) -> surrealdb::Result<Surreal<Db>> {
 ///     let conn = Surreal::new::<Mem>((path.join("db"), Config::default().strict()));
 ///     surrealdb_extras::use_ns_db(conn, "test", "test", vec![Test::register]).await
@@ -30,17 +31,11 @@ pub async fn use_ns_db<C: Connection>(
         conn.query(format!("DEFINE DATABASE {db};")).await?;
     }
     conn.use_db(db).await?;
-    let mut hm = HashMap::new();
-    for (name, path, _) in register.iter() {
-        let name = name();
-        let path = path();
-        hm.insert(path, name);
-    }
 
     let tables = table_list(&conn).await;
     for (name, _, funcs) in register {
         if !tables.contains(name()) {
-            for query in funcs(&hm) {
+            for query in funcs() {
                 println!("{query}");
                 conn.query(query).await?;
             }

@@ -1,33 +1,32 @@
-mod part;
 mod table;
+mod util;
 
-use proc_macro::TokenStream;
+use proc_macro2::TokenStream;
+use quote::ToTokens;
+use surrealdb_core::dbs::{Capabilities, capabilities::Targets};
+use syn::LitStr;
 
-//TODO: apply rename to serde
-#[derive(deluxe::ExtractAttributes, deluxe::ParseAttributes)]
-#[deluxe(attributes(opt))]
-struct SurrealTableOverwrite {
-    rename: Option<String>,
-    db_type: Option<String>,
-    exclude: Option<bool>,
-}
+use crate::{table::SurrealTable, util::DeriveInputUtil};
 
-#[derive(deluxe::ExtractAttributes)]
-#[deluxe(attributes(db))]
-struct SurrealDatabaseName(String);
-
-#[derive(deluxe::ExtractAttributes, Default)]
-#[deluxe(attributes(sql))]
-struct SurrealDatabaseExtraCommands(Vec<String>);
-
-#[proc_macro_derive(SurrealSelect, attributes(opt))]
-/// implements SurrealSelectInfo
-pub fn select(input: TokenStream) -> TokenStream {
-    part::derive_attribute_collector(input)
-}
-
-#[proc_macro_derive(SurrealTable, attributes(db, opt, sql))]
 /// implements SurrealSelectInfo, SurrealTableInfo, add and insert
-pub fn table(input: TokenStream) -> TokenStream {
-    table::derive_attribute_collector(input)
+#[manyhow::manyhow]
+#[proc_macro_derive(SurrealTable, attributes(table))]
+pub fn table(input: TokenStream) -> manyhow::Result<TokenStream> {
+    let table = SurrealTable::parse(input)?;
+    table.gen_()
+}
+
+#[manyhow::manyhow]
+#[proc_macro]
+pub fn sql(input: TokenStream) -> manyhow::Result<TokenStream> {
+    let sql_lit_str = syn::parse2::<LitStr>(input)?;
+    let sql_str = sql_lit_str.value();
+
+    let mut capabilities = Capabilities::all();
+    *capabilities.allowed_experimental_features_mut() = Targets::All;
+
+    match surrealdb_core::syn::parse_with_capabilities(&sql_str, &capabilities) {
+        Ok(_) => Ok(sql_lit_str.to_token_stream()),
+        Err(err) => manyhow::bail!(sql_lit_str.span(), "{err}"),
+    }
 }

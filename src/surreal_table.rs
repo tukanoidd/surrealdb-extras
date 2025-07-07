@@ -1,7 +1,5 @@
 #![allow(async_fn_in_trait)]
 
-use std::collections::HashMap;
-
 use serde::Serialize;
 use serde_content::Serializer;
 use surrealdb::{Connection, RecordIdKey, Surreal, sql::SqlValue};
@@ -9,7 +7,7 @@ use surrealdb::{Connection, RecordIdKey, Surreal, sql::SqlValue};
 use crate::{Record, RecordData, SurrealSelectInfo};
 
 type F1 = fn() -> &'static str;
-type F3 = fn(&HashMap<&'static str, &'static str>) -> Vec<String>;
+type F3 = fn() -> Vec<String>;
 
 pub type Register = (F1, F1, F3);
 
@@ -23,7 +21,7 @@ pub trait SurrealTableInfo: Serialize + SurrealSelectInfo + Clone + 'static {
     /// defines what attr to exclude in check_if_exists
     fn exclude() -> &'static [&'static str];
     /// register attr
-    fn funcs(names: &HashMap<&'static str, &'static str>) -> Vec<String>;
+    fn funcs() -> Vec<String>;
 
     /// checks if item exists in table and returns the result
     async fn check_if_exists<'a, C: Connection>(

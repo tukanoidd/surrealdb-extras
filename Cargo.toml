@@ -1,3 +1,18 @@
+[workspace]
+members = ["./surrealdb-extras-proc-macro"]
+
+[workspace.package]
+version = "2.0.11-alpha3"
+edition = "2024"
+repository = "https://github.com/tukanoidd/surrealdb-extras"
+license = "MIT"
+authors = ["frederik", "Vitalii Lukyanov <tukanoid@outlook.com>"]
+description = "Provides additional functionality for working with SurrealDB"
+
+[workspace.dependencies]
+surrealdb = { version = "3.0", package = "surrealdb-nightly", default-features = false }
+surrealdb-core = { version = "3.0", package = "surrealdb-core-nightly" }
+
 [package]
 name = "surrealdb-extras"
 readme = "readme.md"
@@ -12,8 +27,7 @@ description.workspace = true
 [dependencies]
 surrealdb-extras-proc-macro = { path = "./surrealdb-extras-proc-macro" }
 
-# surrealdb = "2"
-surrealdb = { version = "3.0", package = "surrealdb-nightly" }
+surrealdb = { workspace = true, package = "surrealdb-nightly" }
 
 serde = { version = "1.0", features = ["derive"] }
 chrono = { version = "0.4", optional = true }
@@ -28,11 +42,3 @@ uuid = ["dep:uuid"]
 chrono = ["dep:chrono"]
 geo = ["dep:geo"]
 rust_decimal = ["dep:rust_decimal"]
-
-[workspace.package]
-version = "2.0.11-alpha3"
-edition = "2024"
-repository = "https://github.com/tukanoidd/surrealdb-extras"
-license = "MIT"
-authors = ["frederik", "Vitalii Lukyanov <tukanoid@outlook.com>"]
-description = "Provides additional functionality for working with SurrealDB"

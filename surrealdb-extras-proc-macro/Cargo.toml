@@ -13,7 +13,13 @@ description.workspace = true
 proc-macro = true
 
 [dependencies]
-quote = "1"
-proc-macro2 = { version = "1.0" }
-syn = "2.0"
-deluxe = "0.5.0"
+darling = "0.20.11"
+manyhow = { version = "0.11.4", features = ["darling"] }
+proc-macro2 = { version = "1.0.95", features = ["nightly", "span-locations"] }
+quote = "1.0.40"
+syn = "2.0.104"
+
+heck = "0.5.0"
+
+surrealdb.workspace = true
+surrealdb-core.workspace = true
