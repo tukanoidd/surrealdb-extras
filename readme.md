@@ -2,14 +2,24 @@ A simple library that establishes a connection and sets/creates the namespace&db
 
 ## Example
 ```rs
-pub async fn establish(path: PathBuf) -> surrealdb::Result<Surreal<Db>> {
-    let conn = Surreal::new::<SpeeDb>((path.join("db"), Config::default().strict()));
-    surrealdb_extras::use_ns_db(conn, "test", "test", vec![Test::register]).await
+pub async fn establish<C, S>(
+    endpoint: impl surrealdb::opt::IntoEndpoint<S, Client = C>
+) -> surrealdb::Result<surrealdb::Surreal<C>> {
+    let conn = Surreal::new((endpoint, Config::default().strict()));
+    surrealdb_extras::use_ns_db(conn, "test", "test", vec![Test::register()]).await
 }
 
-#[derive(surrealdb_extras::SurrealTableEntry, Deserialize, Serialize, Clone, Default)]
-#[db("test_table")]
-#[sql(["DEFINE EVENT test_table_updated ON TABLE test_table WHEN $event = \"UPDATE\" AND $before.updated == $after.updated THEN (UPDATE $after.id SET updated = time::now() );"])]
+#[derive(
+    Default,
+    Clone,
+    surrealdb_extras::SurrealTable,
+    serde::Serialize,
+    serde::Deserialize
+)]
+#[table(
+    db = test_table,
+    sql("DEFINE EVENT test_table_updated ON TABLE test_table WHEN $event = \"UPDATE\" AND $before.updated == $after.updated THEN (UPDATE $after.id SET updated = time::now() );")
+)]
 struct Test {
     random_number: i32,
     /// renamed field
@@ -24,8 +34,9 @@ struct Test {
     updated: Datetime
 }
 
-pub async fn demo() {
-    let conn = establish(PathBuf::new()).await.unwrap();
+pub async fn demo<C, S>() where C: surrealdb::Connection {
+    let endpoint = { todo!() };
+    let conn = establish::<C, S>(endpoint).await.unwrap();
     let test = Test::default();
 
     // creates new item with custom id and return self
