@@ -10,8 +10,8 @@ authors = ["frederik", "Vitalii Lukyanov <tukanoid@outlook.com>"]
 description = "Provides additional functionality for working with SurrealDB"
 
 [workspace.dependencies]
-surrealdb = { version = "3.0", package = "surrealdb-nightly", default-features = false }
-surrealdb-core = { version = "3.0", package = "surrealdb-core-nightly" }
+surrealdb = { version = "2.3.6", default-features = false }
+surrealdb-core = "2.3.6"
 
 [package]
 name = "surrealdb-extras"
