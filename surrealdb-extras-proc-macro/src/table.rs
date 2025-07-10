@@ -8,18 +8,50 @@ use darling::{
 use proc_macro2::{Span, TokenStream};
 use quote::{ToTokens, quote};
 use syn::{
-    AngleBracketedGenericArguments, Expr, Generics, Ident, LitStr, PathSegment, Type, TypeParen,
-    TypePath, spanned::Spanned,
+    AngleBracketedGenericArguments, Expr, Ident, LitStr, PathSegment, Type, TypeParen, TypePath,
+    spanned::Spanned,
 };
 
 use crate::util::DeriveInputUtil;
 
 #[derive(FromDeriveInput)]
+#[darling(supports(struct_named))]
+pub struct SurrealSelect {
+    ident: Ident,
+    data: Data<Ignored, SurrealSelectTableField>,
+}
+
+impl DeriveInputUtil for SurrealSelect {
+    fn gen_(&self) -> manyhow::Result<TokenStream> {
+        let Self { ident, data } = self;
+
+        let fields = match data {
+            Data::Enum(_) => unreachable!(),
+            Data::Struct(fields) => fields,
+        };
+
+        let keys = [Ident::new("id", Span::mixed_site())].into_iter().chain(
+            fields
+                .iter()
+                .filter(|&f| (!f.exclude.is_present()))
+                .map(|f| f.field_name().clone()),
+        );
+
+        Ok(quote! {
+                impl surrealdb_extras::SurrealSelectInfo for #ident {
+                fn keys()-> &'static [&'static str] {
+                    &[#( stringify!(#keys) ),*]
+                }
+            }
+        })
+    }
+}
+
+#[derive(FromDeriveInput)]
 #[darling(supports(struct_named), attributes(table))]
 pub struct SurrealTable {
     ident: Ident,
-    generics: Generics,
-    data: Data<Ignored, SurrealTableField>,
+    data: Data<Ignored, SurrealSelectTableField>,
 
     sql: Option<Vec<LitStr>>,
     db: Ident,
@@ -29,36 +61,27 @@ impl DeriveInputUtil for SurrealTable {
     fn gen_(&self) -> manyhow::Result<TokenStream> {
         let Self {
             ident,
-            generics,
             data,
 
             sql,
             db,
         } = self;
 
-        let (impl_gen, ty_gen, where_gen) = generics.split_for_impl();
+        let keys = SurrealSelect {
+            ident: ident.clone(),
+            data: data.clone(),
+        }
+        .gen_()?;
 
         let fields = match data {
             Data::Enum(_) => unreachable!(),
             Data::Struct(fields) => fields,
         };
 
-        fn field_name(f: &SurrealTableField) -> &Ident {
-            f.rename
-                .as_ref()
-                .unwrap_or_else(|| f.ident.as_ref().unwrap())
-        }
-
-        let keys = [Ident::new("id", Span::mixed_site())].into_iter().chain(
-            fields
-                .iter()
-                .filter(|&f| (!f.exclude.is_present()))
-                .map(|f| field_name(f).clone()),
-        );
         let exc = fields
             .iter()
             .filter(|&f| f.exclude.is_present())
-            .map(field_name);
+            .map(SurrealSelectTableField::field_name);
 
         let mut err_emitter = manyhow::Emitter::new();
 
@@ -70,7 +93,7 @@ impl DeriveInputUtil for SurrealTable {
         let define_field_queries = fields
             .iter()
             .map(|f| {
-                let name = field_name(f);
+                let name = f.field_name();
                 let ty = f
                     .db_type
                     .as_ref()
@@ -100,13 +123,9 @@ impl DeriveInputUtil for SurrealTable {
         .chain(sql);
 
         Ok(quote! {
-            impl<#impl_gen> surrealdb_extras::SurrealSelectInfo for #ident #ty_gen #where_gen {
-                fn keys()-> &'static [&'static str] {
-                    &[#( stringify!(#keys) ),*]
-                }
-            }
+            #keys
 
-            impl<#impl_gen> surrealdb_extras::SurrealTableInfo for #ident #ty_gen #where_gen {
+            impl surrealdb_extras::SurrealTableInfo for #ident {
                 fn name() -> &'static str {
                     stringify!(#db)
                 }
@@ -144,9 +163,9 @@ impl DeriveInputUtil for SurrealTable {
     }
 }
 
-#[derive(FromField)]
+#[derive(Clone, FromField)]
 #[darling(attributes(opt))]
-struct SurrealTableField {
+struct SurrealSelectTableField {
     ident: Option<Ident>,
     ty: Type,
 
@@ -156,7 +175,13 @@ struct SurrealTableField {
     exclude: Flag,
 }
 
-impl SurrealTableField {
+impl SurrealSelectTableField {
+    fn field_name(&self) -> &Ident {
+        self.rename
+            .as_ref()
+            .unwrap_or_else(|| self.ident.as_ref().unwrap())
+    }
+
     fn surreal_ty(&self) -> manyhow::Result<SurrealTy> {
         match &self.db_type {
             Some(db_ty) => Ok(db_ty.clone().into()),

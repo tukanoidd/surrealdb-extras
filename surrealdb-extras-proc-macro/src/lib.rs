@@ -7,7 +7,11 @@ use quote::ToTokens;
 use surrealdb_core::dbs::{Capabilities, capabilities::Targets};
 use syn::LitStr;
 
-use crate::{query::SurrealQuery, table::SurrealTable, util::DeriveInputUtil};
+use crate::{
+    query::SurrealQuery,
+    table::{SurrealSelect, SurrealTable},
+    util::DeriveInputUtil,
+};
 
 /// implements SurrealSelectInfo, SurrealTableInfo, add and insert
 #[manyhow::manyhow]
@@ -15,6 +19,14 @@ use crate::{query::SurrealQuery, table::SurrealTable, util::DeriveInputUtil};
 pub fn table(input: TokenStream) -> manyhow::Result<TokenStream> {
     let table = SurrealTable::parse(input)?;
     table.gen_()
+}
+
+/// implements SurrealSelectInfo
+#[manyhow::manyhow]
+#[proc_macro_derive(SurrealSelect)]
+pub fn select(input: TokenStream) -> manyhow::Result<TokenStream> {
+    let select = SurrealSelect::parse(input)?;
+    select.gen_()
 }
 
 #[manyhow::manyhow]
