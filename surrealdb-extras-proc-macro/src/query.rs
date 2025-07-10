@@ -21,6 +21,7 @@ pub struct SurrealQuery {
     output: Option<LitStr>,
     check: Flag,
     error: Option<Path>,
+    sql: LitStr,
 }
 
 impl SurrealQuery {
@@ -47,6 +48,20 @@ impl SurrealQuery {
             },
             false => quote!(Ok(#res.take::<Self::Output>(0)?)),
         }
+    }
+
+    fn build_query_str(&self) -> LitStr {
+        let fields = match &self.data {
+            Data::Enum(_) => unreachable!(),
+            Data::Struct(fields) => fields,
+        };
+
+        let query_str = fields.iter().fold(self.sql.value(), |str, field| {
+            let ident = field.ident.as_ref().unwrap();
+            str.replace(&format!("{{{ident}}}"), &format!("${ident}"))
+        });
+
+        LitStr::new(&query_str, self.sql.span())
     }
 }
 
@@ -83,7 +98,7 @@ impl DeriveInputUtil for SurrealQuery {
             Data::Struct(fields) => fields,
         };
 
-        let query_str = DBQueryField::build_query_str(&fields.fields);
+        let query_str = self.build_query_str();
         let query = self.build_query();
 
         let field_names = fields.fields.iter().enumerate().map(|(ind, field)| {
@@ -123,62 +138,22 @@ impl DeriveInputUtil for SurrealQuery {
 }
 
 #[derive(FromField)]
-#[darling(attributes(var))]
 struct DBQueryField {
     vis: Visibility,
     ident: Option<Ident>,
     ty: Type,
-
-    sql: Option<LitStr>,
 }
 
 impl DBQueryField {
     fn span(&self) -> Span {
-        match &self.sql {
-            Some(str) => str.span(),
-            None => match &self.vis {
-                Visibility::Public(pub_) => pub_.span(),
-                Visibility::Restricted(vis_restricted) => vis_restricted.span(),
-                Visibility::Inherited => match &self.ident {
-                    Some(ident) => ident.span(),
-                    None => self.ty.span(),
-                },
+        match &self.vis {
+            Visibility::Public(pub_) => pub_.span(),
+            Visibility::Restricted(vis_restricted) => vis_restricted.span(),
+            Visibility::Inherited => match &self.ident {
+                Some(ident) => ident.span(),
+                None => self.ty.span(),
             },
         }
-    }
-
-    fn build_query_str(list: &[Self]) -> LitStr {
-        let query_str = list.iter().enumerate().fold(
-            String::new(),
-            |str, (ind, DBQueryField { ident, sql, .. })| {
-                let var_name = match ident {
-                    Some(ident) => format!("${ident}"),
-                    None => format!("$var{ind}"),
-                };
-
-                match sql {
-                    Some(sql) => format!("{str}{}", sql.value().replace("{}", &var_name)),
-                    None => format!("{str}{var_name}"),
-                }
-            },
-        );
-
-        LitStr::new(
-            &query_str,
-            match list.is_empty() {
-                true => Span::mixed_site(),
-                false => {
-                    let fst_span = list[0].span();
-
-                    match list.len() {
-                        1 => fst_span,
-                        _ => list[1..]
-                            .iter()
-                            .fold(fst_span, |span, field| span.join(field.span()).unwrap()),
-                    }
-                }
-            },
-        )
     }
 
     fn build_query_binds(list: &[Self]) -> impl Iterator<Item = TokenStream> {
