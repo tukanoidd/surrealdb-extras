@@ -12,21 +12,27 @@ use syn::{Generics, Ident, LitStr, Path, Type, Visibility, spanned::Spanned};
 use crate::DeriveInputUtil;
 
 #[derive(FromDeriveInput)]
-#[darling(supports(struct_named, struct_tuple), attributes(query))]
+#[darling(supports(struct_named, struct_tuple, struct_unit), attributes(query))]
 pub struct SurrealQuery {
     ident: Ident,
     generics: Generics,
     data: Data<Ignored, DBQueryField>,
 
     output: Option<LitStr>,
+    stream: Option<LitStr>,
     check: Flag,
     error: Option<Path>,
     sql: LitStr,
 }
 
 impl SurrealQuery {
-    fn build_query(&self) -> TokenStream {
-        let Self { data, check, .. } = self;
+    fn build_query(&self) -> manyhow::Result<TokenStream> {
+        let Self {
+            data,
+            check,
+            stream,
+            ..
+        } = self;
 
         let fields = match data {
             Data::Enum(_) => unreachable!(),
@@ -41,13 +47,20 @@ impl SurrealQuery {
                 .await?
         };
 
-        match check.is_present() {
-            true => quote! {
-                #res.check()?;
-                Ok(())
+        Ok(match stream {
+            Some(stream) => {
+                let stream = TokenStream::from_str(&stream.value())
+                    .map_err(|err| manyhow::error_message!(stream.span(), "{err}"))?;
+                quote!(Ok(#res.stream::<surrealdb::Notification<#stream>>(0)?))
+            }
+            None => match check.is_present() {
+                true => quote! {
+                    #res.check()?;
+                    Ok(())
+                },
+                false => quote!(Ok(#res.take::<Self::Output>(0)?)),
             },
-            false => quote!(Ok(#res.take::<Self::Output>(0)?)),
-        }
+        })
     }
 
     fn build_query_str(&self) -> LitStr {
@@ -73,15 +86,25 @@ impl DeriveInputUtil for SurrealQuery {
             data,
 
             output,
+            stream,
             error,
             ..
         } = self;
 
-        let output = output
+        let output = stream
             .as_ref()
             .map(|ty| {
-                TokenStream::from_str(&ty.value())
-                    .map_err(|err| manyhow::error_message!(ty.span(), "{err}"))
+                TokenStream::from_str(&format!(
+                    "surrealdb::method::QueryStream<surrealdb::Notification<{}>>",
+                    ty.value()
+                ))
+                .map_err(|err| manyhow::error_message!(ty.span(), "{err}"))
+            })
+            .or_else(|| {
+                output.as_ref().map(|ty| {
+                    TokenStream::from_str(&ty.value())
+                        .map_err(|err| manyhow::error_message!(ty.span(), "{err}"))
+                })
             })
             .transpose()?
             .unwrap_or_else(|| quote!(()));
@@ -99,7 +122,7 @@ impl DeriveInputUtil for SurrealQuery {
         };
 
         let query_str = self.build_query_str();
-        let query = self.build_query();
+        let query = self.build_query()?;
 
         let field_names = fields.fields.iter().enumerate().map(|(ind, field)| {
             field
@@ -110,12 +133,12 @@ impl DeriveInputUtil for SurrealQuery {
 
         let self_unwrapped = {
             let fields = match fields.style {
-                Style::Tuple => quote!((#(#field_names),*)),
-                Style::Struct => quote!({#(#field_names),*}),
-                Style::Unit => unreachable!(),
+                Style::Tuple => Some(quote!((#(#field_names),*))),
+                Style::Struct => Some(quote!({#(#field_names),*})),
+                Style::Unit => None,
             };
 
-            quote!(let Self #fields = self;)
+            fields.map(|fields| quote!(let Self #fields = self;))
         };
 
         Ok(quote! {
