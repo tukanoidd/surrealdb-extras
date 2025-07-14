@@ -150,7 +150,7 @@ impl DeriveInputUtil for SurrealQuery {
 
                 async fn execute<C>(
                     self,
-                    db: std::sync::Arc<surrealdb::Surreal<C>>
+                    db: surrealdb::Surreal<C>
                 ) -> Result<Self::Output, Self::Error> where C: surrealdb::Connection {
                     #self_unwrapped
                     #query
