@@ -1,5 +1,5 @@
 [workspace]
-members = ["./surrealdb-extras-proc-macro"]
+members = [".", "./surrealdb-extras-proc-macro"]
 
 [workspace.package]
 version = "3.0.0-alpha1"
