@@ -33,7 +33,7 @@ impl DeriveInputUtil for SurrealSelect {
         let keys = [Ident::new("id", Span::mixed_site())].into_iter().chain(
             fields
                 .iter()
-                .filter(|&f| (!f.exclude.is_present()))
+                .filter(|&f| !f.exclude.is_present())
                 .map(|f| f.field_name().clone()),
         );
 
