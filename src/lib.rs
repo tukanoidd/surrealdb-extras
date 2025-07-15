@@ -13,7 +13,7 @@ use serde::de::DeserializeOwned;
 
 pub use surrealdb_extras_proc_macro::*;
 
-pub use define::use_ns_db;
+pub use define::SurrealExt;
 pub use query::SurrealQuery;
 pub use records::{Record, RecordData};
 pub use surreal_table::SurrealTableInfo;
