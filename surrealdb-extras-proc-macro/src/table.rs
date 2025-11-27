@@ -261,7 +261,7 @@ impl SurrealSelectTableField {
                     // TODO: add type which record
                     "RecordId" => Ident::new("record", ident.span()),
                     "HashSet" => Ident::new("set", ident.span()),
-                    "String" | "PathBuf" => return Ok(Ident::new("string", ident.span()).into()),
+                    "String" => return Ok(Ident::new("string", ident.span()).into()),
                     // TODO: geometry
                     _ => return Ok(Ident::new("object", ident.span()).into()),
                 };
