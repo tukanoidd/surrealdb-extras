@@ -154,7 +154,7 @@ impl DeriveInputUtil for SurrealTable {
                 pub fn insert<'a: 'b, 'b, D: surrealdb::Connection>(
                     self,
                     conn: &'a surrealdb::Surreal<D>,
-                    id: surrealdb::RecordIdKey
+                    id: surrealdb::types::RecordIdKey
                 )-> surrealdb::method::Content<'b, D, Option<surrealdb_extras::RecordData<#ident>>> {
                     conn.create((stringify!(#db), id)).content(self)
                 }
