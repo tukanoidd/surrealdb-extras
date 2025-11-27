@@ -1,6 +1,7 @@
-use crate::RecordIdFunc;
 use serde::{Deserialize, Serialize};
-use surrealdb::RecordId;
+use surrealdb::types::RecordId;
+
+use crate::RecordIdFunc;
 
 impl Serialize for RecordIdFunc {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>

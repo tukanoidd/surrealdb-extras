@@ -1,11 +1,14 @@
-use crate::{RecordIdFunc, SurrealSelectInfo};
-use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
-use surrealdb::method::{Content, Delete, Merge, Patch, Select};
-use surrealdb::opt::PatchOp;
-use surrealdb::{Connection, Error, RecordId, Surreal};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use surrealdb::{
+    Connection, Error, Surreal,
+    method::{Content, Delete, Merge, Patch, Select},
+    opt::PatchOp,
+    types::{RecordId, SurrealValue},
+};
 
-#[derive(Debug, Serialize, Deserialize)]
+use crate::{RecordIdFunc, SurrealSelectInfo};
+
+#[derive(Debug, SurrealValue, Serialize, Deserialize)]
 /// Deserialize response into id
 pub struct Record {
     pub id: RecordIdFunc,
@@ -35,7 +38,11 @@ impl Record {
     }
 
     /// Replaces the current document / record data with the specified data
-    pub fn replace<T: DeserializeOwned, C: Connection, D: Serialize + 'static>(
+    pub fn replace<
+        T: SurrealValue + DeserializeOwned,
+        C: Connection,
+        D: SurrealValue + Serialize + 'static,
+    >(
         self,
         conn: &'_ Surreal<C>,
         data: D,
@@ -44,7 +51,7 @@ impl Record {
     }
 
     /// Merges the current document / record data with the specified data
-    pub fn merge<T: DeserializeOwned, C: Connection, D: Serialize>(
+    pub fn merge<T: SurrealValue + DeserializeOwned, C: Connection, D: SurrealValue + Serialize>(
         self,
         conn: &'_ Surreal<C>,
         data: D,
@@ -53,7 +60,7 @@ impl Record {
     }
 
     /// Patches the current document / record data with the specified JSON Patch data
-    pub fn patch<T: DeserializeOwned, C: Connection>(
+    pub fn patch<T: SurrealValue + DeserializeOwned, C: Connection>(
         self,
         conn: &'_ Surreal<C>,
         data: PatchOp,
@@ -62,7 +69,7 @@ impl Record {
     }
 
     /// Gets part from db
-    pub async fn get_part<C: Connection, T: SurrealSelectInfo>(
+    pub async fn get_part<C: Connection, T: SurrealValue + SurrealSelectInfo>(
         self,
         conn: &Surreal<C>,
     ) -> Result<Option<RecordData<T>>, Error> {
@@ -70,15 +77,21 @@ impl Record {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, SurrealValue)]
 /// Deserialize response into id and data
-pub struct RecordData<RD> {
+pub struct RecordData<RD>
+where
+    RD: SurrealValue,
+{
     pub id: RecordIdFunc,
     #[serde(flatten)]
     pub data: RD,
 }
 
-impl<D> RecordData<D> {
+impl<D> RecordData<D>
+where
+    D: SurrealValue,
+{
     /// deletes from db and return value
     pub fn delete<T, C: Connection>(self, conn: &'_ Surreal<C>) -> Delete<'_, C, Option<T>> {
         self.id.delete(conn)
@@ -95,7 +108,11 @@ impl<D> RecordData<D> {
     }
 
     /// Replaces the current document / record data with the specified data
-    pub fn replace<T: DeserializeOwned, C: Connection, ID: Serialize + 'static>(
+    pub fn replace<
+        T: SurrealValue + DeserializeOwned,
+        C: Connection,
+        ID: SurrealValue + Serialize + 'static,
+    >(
         self,
         conn: &'_ Surreal<C>,
         data: ID,
@@ -104,7 +121,11 @@ impl<D> RecordData<D> {
     }
 
     /// Merges the current document / record data with the specified data
-    pub fn merge<T: DeserializeOwned, C: Connection, ID: Serialize>(
+    pub fn merge<
+        T: SurrealValue + DeserializeOwned,
+        C: Connection,
+        ID: SurrealValue + Serialize,
+    >(
         self,
         conn: &'_ Surreal<C>,
         data: ID,
@@ -113,7 +134,7 @@ impl<D> RecordData<D> {
     }
 
     /// Patches the current document / record data with the specified JSON Patch data
-    pub fn patch<T: DeserializeOwned, C: Connection>(
+    pub fn patch<T: SurrealValue + DeserializeOwned, C: Connection>(
         self,
         conn: &'_ Surreal<C>,
         data: PatchOp,
@@ -122,7 +143,7 @@ impl<D> RecordData<D> {
     }
 
     /// Gets part from db
-    pub async fn get_part<C: Connection, T: SurrealSelectInfo>(
+    pub async fn get_part<C: Connection, T: SurrealValue + SurrealSelectInfo>(
         self,
         conn: &Surreal<C>,
     ) -> Result<Option<RecordData<T>>, Error> {

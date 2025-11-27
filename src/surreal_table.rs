@@ -1,8 +1,11 @@
 #![allow(async_fn_in_trait)]
 
 use serde::Serialize;
-use serde_content::Serializer;
-use surrealdb::{Connection, RecordIdKey, Surreal, sql::Value};
+use surrealdb::{
+    Connection, Surreal,
+    types::{RecordIdKey, Value},
+};
+use surrealdb_types::{SurrealValue, ToSql};
 
 use crate::{Record, RecordData, SurrealSelectInfo};
 
@@ -13,7 +16,7 @@ pub type Register = (F1, F1, F3);
 
 /// usefull functions for db
 /// will be created by proc macro
-pub trait SurrealTableInfo: Serialize + SurrealSelectInfo + Clone + 'static {
+pub trait SurrealTableInfo: Serialize + SurrealValue + SurrealSelectInfo + Clone + 'static {
     /// db name
     fn name() -> &'static str;
     /// path to struct
@@ -29,19 +32,14 @@ pub trait SurrealTableInfo: Serialize + SurrealSelectInfo + Clone + 'static {
         db: &'a Surreal<C>,
     ) -> Result<Option<Record>, surrealdb::Error> {
         let ignore = Self::exclude();
-        let value: Value = Serializer::new()
-            .serialize(self)
-            .map_err(|e| {
-                surrealdb::Error::Api(surrealdb::error::Api::SerializeValue(e.to_string()))
-            })?
-            .try_into()?;
+        let value: Value = self.clone().into_value();
 
         let mut query = vec![];
 
         if let Value::Object(obj) = value {
-            for (key, item) in obj.0 {
+            for (key, item) in obj {
                 if !ignore.contains(&key.as_str()) {
-                    query.push(format!("{key} = {item}"));
+                    query.push(format!("{key} = {}", item.to_sql()));
                 }
             }
         } else {
@@ -64,9 +62,9 @@ pub trait SurrealTableInfo: Serialize + SurrealSelectInfo + Clone + 'static {
     async fn add_i<D: Connection>(self, conn: &Surreal<D>) -> Result<Record, surrealdb::Error> {
         let r: Option<Record> = conn.create(Self::name()).content(self).await?;
 
-        r.ok_or(surrealdb::Error::Api(surrealdb::error::Api::InternalError(
+        r.ok_or(surrealdb::Error::InternalError(
             "No return value".to_owned(),
-        )))
+        ))
     }
 
     /// checks if item exists(adds to db if its not in db) and returns id
@@ -83,7 +81,10 @@ pub trait SurrealTableInfo: Serialize + SurrealSelectInfo + Clone + 'static {
     }
 
     /// search db
-    async fn search<T: SurrealSelectInfo + serde::de::DeserializeOwned, C: Connection>(
+    async fn search<
+        T: SurrealValue + SurrealSelectInfo + serde::de::DeserializeOwned,
+        C: Connection,
+    >(
         conn: &Surreal<C>,
         query: Option<String>,
     ) -> Result<Vec<RecordData<T>>, surrealdb::Error> {

@@ -1,14 +1,17 @@
-use crate::{Record, RecordData, SurrealSelectInfo};
-use serde::Serialize;
-use serde::de::DeserializeOwned;
-use surrealdb::method::{Content, Delete, Merge, Patch, Select};
-use surrealdb::opt::PatchOp;
-use surrealdb::{Connection, Error, RecordId, RecordIdKey, Surreal};
-
 mod from;
-mod r#impl;
+mod impl_;
 
-#[derive(Clone, Debug, PartialEq, PartialOrd)]
+use serde::{Serialize, de::DeserializeOwned};
+use surrealdb::{
+    Connection, Error, Surreal,
+    method::{Content, Delete, Merge, Patch, Select},
+    opt::PatchOp,
+    types::{RecordId, RecordIdKey, SurrealValue},
+};
+
+use crate::{Record, RecordData, SurrealSelectInfo};
+
+#[derive(Clone, Debug, PartialEq, PartialOrd, SurrealValue)]
 /// some usefull functions for Thing
 /// ```
 /// #[derive(surrealdb_extras::SurrealTable, serde::Serialize, serde::Deserialize)]
@@ -38,7 +41,11 @@ impl RecordIdFunc {
     }
 
     /// Replaces the current document / record data with the specified data
-    pub fn replace<R: DeserializeOwned, C: Connection, D: Serialize + 'static>(
+    pub fn replace<
+        R: SurrealValue + DeserializeOwned,
+        C: Connection,
+        D: SurrealValue + Serialize + 'static,
+    >(
         self,
         conn: &'_ Surreal<C>,
         data: D,
@@ -47,7 +54,7 @@ impl RecordIdFunc {
     }
 
     /// Merges the current document / record data with the specified data
-    pub fn merge<T: DeserializeOwned, C: Connection, D: Serialize>(
+    pub fn merge<T: SurrealValue + DeserializeOwned, C: Connection, D: SurrealValue + Serialize>(
         self,
         conn: &'_ Surreal<C>,
         data: D,
@@ -56,7 +63,7 @@ impl RecordIdFunc {
     }
 
     /// Patches the current document / record data with the specified JSON Patch data
-    pub fn patch<T: DeserializeOwned, C: Connection>(
+    pub fn patch<T: SurrealValue + DeserializeOwned, C: Connection>(
         self,
         conn: &'_ Surreal<C>,
         data: PatchOp,
@@ -71,7 +78,7 @@ impl RecordIdFunc {
     }
 
     /// gets part from db
-    pub async fn get_part<C: Connection, T: SurrealSelectInfo>(
+    pub async fn get_part<C: Connection, T: SurrealValue + SurrealSelectInfo>(
         self,
         conn: &Surreal<C>,
     ) -> Result<Option<RecordData<T>>, Error> {
@@ -82,11 +89,11 @@ impl RecordIdFunc {
 
     /// returns table
     pub fn tb(&self) -> &str {
-        self.0.table()
+        self.0.table.as_str()
     }
 
     /// returns id
     pub fn id(&self) -> &RecordIdKey {
-        self.0.key()
+        &self.0.key
     }
 }

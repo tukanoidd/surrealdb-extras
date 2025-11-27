@@ -1,8 +1,12 @@
-use crate::{RecordIdFunc, RecordIdType};
+use std::{
+    any::type_name,
+    fmt::{Debug, Formatter},
+};
+
 use serde::{Deserialize, Serialize};
-use std::any::type_name;
-use std::fmt::{Debug, Formatter};
-use surrealdb::RecordId;
+use surrealdb::types::RecordId;
+
+use crate::{RecordIdFunc, RecordIdType};
 
 impl<T> Debug for RecordIdType<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

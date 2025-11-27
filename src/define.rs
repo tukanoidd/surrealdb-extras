@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use surrealdb::{Connection, Surreal, Value};
+use surrealdb::{Connection, Surreal, types::Value};
 
 use crate::surreal_table::Register;
 
@@ -66,8 +66,7 @@ where
             .unwrap()
             .take::<Value>(0)
             .unwrap()
-            .into_inner()
-            .into_json()
+            .into_json_value()
             .as_object()
             .unwrap()
             .get_key_value(key_value.0)
@@ -86,8 +85,7 @@ where
             .unwrap()
             .take::<Value>(0)
             .unwrap()
-            .into_inner()
-            .into_json()
+            .into_json_value()
             .as_object()
             .unwrap()
             .get_key_value("tables")

@@ -1,12 +1,18 @@
 mod from;
-mod r#impl;
+mod impl_;
+
+use std::marker::PhantomData;
+
+use serde::Serialize;
+use surrealdb::{
+    Connection, Error, Surreal,
+    method::{Content, Delete, Merge, Patch},
+    opt::PatchOp,
+    types::{RecordId, RecordIdKey},
+};
+use surrealdb_types::SurrealValue;
 
 use crate::{RecordData, RecordIdFunc, SurrealSelectInfo, SurrealTableInfo};
-use serde::Serialize;
-use std::marker::PhantomData;
-use surrealdb::method::{Content, Delete, Merge, Patch};
-use surrealdb::opt::PatchOp;
-use surrealdb::{Connection, Error, RecordId, RecordIdKey, Surreal};
 
 /// RecordIdFunc + defining the table for SurrealTableInfo
 /// ```
@@ -45,7 +51,7 @@ impl<T: SurrealTableInfo + SurrealSelectInfo> RecordIdType<T> {
             parse_to: Default::default(),
         }
     }
-    pub async fn get_part<C: Connection, TT: SurrealSelectInfo>(
+    pub async fn get_part<C: Connection, TT: SurrealValue + SurrealSelectInfo>(
         self,
         conn: &Surreal<C>,
     ) -> Result<Option<RecordData<TT>>, Error> {
@@ -83,7 +89,7 @@ impl<T: SurrealTableInfo + SurrealSelectInfo> RecordIdType<T> {
     }
 
     /// Merges the current document / record data with the specified data
-    pub fn merge<C: Connection, D: Serialize>(
+    pub fn merge<C: Connection, D: SurrealValue + Serialize>(
         self,
         conn: &'_ Surreal<C>,
         data: D,
@@ -92,7 +98,7 @@ impl<T: SurrealTableInfo + SurrealSelectInfo> RecordIdType<T> {
     }
 
     /// Replaces the current document / record data with the specified data
-    pub fn replace<C: Connection, D: Serialize + 'static>(
+    pub fn replace<C: Connection, D: SurrealValue + Serialize + 'static>(
         self,
         conn: &'_ Surreal<C>,
         data: D,

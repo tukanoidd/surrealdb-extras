@@ -1,7 +1,8 @@
-use crate::{Record, RecordData, RecordIdFunc, RecordIdType, SurrealTableInfo};
 use std::str::FromStr;
-use surrealdb::sql::Strand;
-use surrealdb::{RecordId, RecordIdKey};
+
+use surrealdb::types::{RecordId, RecordIdKey};
+
+use crate::{Record, RecordData, RecordIdFunc, RecordIdType, SurrealTableInfo};
 
 impl<T: SurrealTableInfo> From<RecordIdFunc> for RecordIdType<T> {
     fn from(value: RecordIdFunc) -> Self {
@@ -28,53 +29,49 @@ impl<T: SurrealTableInfo> From<RecordData<T>> for RecordIdType<T> {
 }
 
 impl<T: SurrealTableInfo> From<(&str, RecordIdKey)> for RecordIdType<T> {
-    fn from(value: (&str, RecordIdKey)) -> Self {
-        Self::from(RecordId::from(value))
+    fn from((table, id): (&str, RecordIdKey)) -> Self {
+        Self::from(RecordId::new(table, id))
     }
 }
 
 impl<T: SurrealTableInfo> From<(String, RecordIdKey)> for RecordIdType<T> {
-    fn from(value: (String, RecordIdKey)) -> Self {
-        Self::from(RecordId::from(value))
+    fn from((table, id): (String, RecordIdKey)) -> Self {
+        Self::from(RecordId::new(table, id))
     }
 }
 
 impl<T: SurrealTableInfo> From<(String, String)> for RecordIdType<T> {
-    fn from(value: (String, String)) -> Self {
-        Self::from(RecordId::from(value))
+    fn from((table, id): (String, String)) -> Self {
+        Self::from(RecordId::new(table, id))
     }
 }
 
 impl<T: SurrealTableInfo> From<(&str, &str)> for RecordIdType<T> {
-    fn from(value: (&str, &str)) -> Self {
-        Self::from(RecordId::from(value))
+    fn from((table, id): (&str, &str)) -> Self {
+        Self::from(RecordId::new(table, id))
     }
 }
 
 impl<T: SurrealTableInfo> FromStr for RecordIdType<T> {
     type Err = surrealdb::Error;
+
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self::from(RecordId::from_str(s)?))
+        Ok(Self::from(RecordId::parse_simple(s)?))
     }
 }
 
 impl<T: SurrealTableInfo> TryFrom<String> for RecordIdType<T> {
     type Error = surrealdb::Error;
-    fn try_from(v: String) -> Result<Self, Self::Error> {
-        Ok(Self::from(RecordId::from_str(v.as_str())?))
-    }
-}
 
-impl<T: SurrealTableInfo> TryFrom<Strand> for RecordIdType<T> {
-    type Error = surrealdb::Error;
-    fn try_from(v: Strand) -> Result<Self, Self::Error> {
-        Ok(Self::from(RecordId::from_str(v.as_str())?))
+    fn try_from(v: String) -> Result<Self, Self::Error> {
+        Ok(Self::from(RecordId::parse_simple(v.as_str())?))
     }
 }
 
 impl<T: SurrealTableInfo> TryFrom<&str> for RecordIdType<T> {
     type Error = surrealdb::Error;
+
     fn try_from(v: &str) -> Result<Self, Self::Error> {
-        Ok(Self::from(RecordId::from_str(v)?))
+        Ok(Self::from(RecordId::parse_simple(v)?))
     }
 }
